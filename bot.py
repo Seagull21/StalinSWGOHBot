@@ -1,3 +1,6 @@
+import os
+from flask import Flask, request
+import logging
 import telebot
 import config
 
@@ -51,4 +54,23 @@ def handle_sites(message):
 	bot.send_message(message.chat.id, "\U0001F310 Полезные сайты\nОфициальный форум игры:\nhttps://forums.galaxy-of-heroes.starwars.ea.com/\nБаза данных по игре:\nhttps://swgoh.gg\nФорум игры на Reddit:\nhttps://www.reddit.com/r/SWGalaxyOfHeroes/\nСайт с полезными инструментами для игры:\nhttp://www.crouchingrancor.com/\nОчень полезный сайт по игре:\nhttp://www.swgoh.life")
 
 if __name__ == '__main__':
+    bot.polling(none_stop=True)
+
+if "HEROKU" in list(os.environ.keys()):
+    logger = telebot.logger
+    telebot.logger.setLevel(logging.INFO)
+
+    server = Flask(__name__)
+    @server.route("/bot", methods=['POST'])
+    def getMessage():
+        bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+        return "!", 200
+    @server.route("/")
+    def webhook():
+        bot.remove_webhook()
+        bot.set_webhook(url="https://stalinswgohbot.herokuapp.com/bot")
+        return "?", 200
+    server.run(host="0.0.0.0", port=os.environ.get('PORT', 80))
+else:
+    bot.remove_webhook()
     bot.polling(none_stop=True)
